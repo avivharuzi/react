@@ -46,6 +46,7 @@ import {
   enableRefAsProp,
   enableFlightReadableStream,
   enableOwnerStacks,
+  enableServerComponentLogs,
 } from 'shared/ReactFeatureFlags';
 
 import {
@@ -1364,10 +1365,8 @@ function parseModelString(
           // happened.
           Object.defineProperty(parentObject, key, {
             get: function () {
-              // We intentionally don't throw an error object here because it looks better
-              // without the stack in the console which isn't useful anyway.
-              // eslint-disable-next-line no-throw-literal
-              throw (
+              // TODO: We should ideally throw here to indicate a difference.
+              return (
                 'This object has been omitted by React in the console log ' +
                 'to avoid sending too much data from the server. Try logging smaller ' +
                 'or more specific objects.'
@@ -1930,7 +1929,7 @@ function resolveErrorDev(
   }
 
   let error;
-  if (!enableOwnerStacks) {
+  if (!enableOwnerStacks && !enableServerComponentLogs) {
     // Executing Error within a native stack isn't really limited to owner stacks
     // but we gate it behind the same flag for now while iterating.
     // eslint-disable-next-line react-internal/prod-error-codes
@@ -2465,9 +2464,7 @@ function resolveConsoleEntry(
   const env = payload[3];
   const args = payload.slice(4);
 
-  if (!enableOwnerStacks) {
-    // Printing with stack isn't really limited to owner stacks but
-    // we gate it behind the same flag for now while iterating.
+  if (!enableOwnerStacks && !enableServerComponentLogs) {
     bindToConsole(methodName, args, env)();
     return;
   }
